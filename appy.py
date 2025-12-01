@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 
 # load trained pipeline
-model = joblib.load("smartphone_price_DTree_model","smartphone_price_logreg_model","smartphone_price_SVC_model")
+model = joblib.load("Models")
 
 st.title("Smartphone Price Category Predictor")
 
