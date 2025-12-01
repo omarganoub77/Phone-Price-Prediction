@@ -6,16 +6,17 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import OrdinalEncoder
 
 # load data
-df = pd.read_csv("train.csv")
+train_df = pd.read_csv("train.csv")
 
 # map target
-df["price"] = df["price"].map({"non-expensive": 0, "expensive": 1})
+train_df["price"] = train_df["price"].map({"non-expensive": 0, "expensive": 1})
 
 # features/target
-X = df.drop(["price"], axis=1)
-y = df["price"]
+X = train_df.drop(["price"], axis=1)
+y = train_df["price"]
 
 # column groups
 numerical_cols = [
@@ -34,7 +35,6 @@ categorical_cols = [
      "Processor_Series", "memory_card_size"
 ]
 
-# simple binary encoding: map Yes/No to 1/0 before pipeline
 for col in binary_cols:
     X[col] = X[col].map({"Yes": 1, "No": 0})
 
@@ -43,14 +43,13 @@ preprocessor = ColumnTransformer(
     transformers=[
         ("num", StandardScaler(), numerical_cols),
         ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_cols),
-    ],
-    remainder="drop",
+         ("bin", OrdinalEncoder(), binary_cols)
+    ]
+    
 )
 
 # split train/validation (learning only)
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 # model pipeline
 model = Pipeline(
@@ -63,9 +62,26 @@ model = Pipeline(
 # train
 model.fit(X_train, y_train)
 
-# evaluate
+"""# evaluate
 y_pred = model.predict(X_test)
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
+joblib.dump(model, "smartphone_price_DTree_model")
+print("Model Saved✅")"""
+
+# 2. EVALUATE ON test_data.csv
+test_df = pd.read_csv("test.csv")
+# Assuming test_data.csv has 'price' column
+X_test_final = test_df.drop(["price"], axis=1)
+y_test_final = test_df["price"].map({"non-expensive": 0, "expensive": 1})
+
+# Apply same preprocessing for binary columns
+for col in binary_cols:
+    X_test_final[col] = X_test_final[col].map({"Yes": 1, "No": 0})
+
+# Predict
+y_pred_final = model.predict(X_test_final)
+print("Tree Test Set Accuracy:", accuracy_score(y_test_final, y_pred_final))
+print(classification_report(y_test_final, y_pred_final))
 joblib.dump(model, "smartphone_price_DTree_model")
 print("Model Saved✅")
